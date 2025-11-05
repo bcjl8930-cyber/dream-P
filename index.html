@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔法学徒与神秘孩童 - 视觉小说游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 800px;
+            max-height: 600px;
+            background-color: #222;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+        
+        #background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            transition: opacity 0.5s ease;
+        }
+        
+        #character-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        
+        .character {
+            position: absolute;
+            height: 70%;
+            bottom: 0;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .character.active {
+            opacity: 1;
+        }
+        
+        #dialogue-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-top: 2px solid #444;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+        
+        #name-container {
+            margin-bottom: 10px;
+        }
+        
+        #character-name {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: white;
+            text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+        }
+        
+        #dialogue-text {
+            font-size: 1.1em;
+            line-height: 1.5;
+            color: white;
+            text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            min-height: 60px;
+        }
+        
+        #continue-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: white;
+            font-size: 1.5em;
+            animation: blink 1.5s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        #menu-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 1px solid #666;
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.9em;
+            z-index: 100;
+        }
+        
+        #menu-button:hover {
+            background: rgba(50, 50, 50, 0.7);
+        }
+        
+        #menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        
+        .menu-button {
+            background: rgba(50, 50, 50, 0.8);
+            color: white;
+            border: 1px solid #666;
+            border-radius: 5px;
+            padding: 12px 24px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            width: 200px;
+            text-align: center;
+        }
+        
+        .menu-button:hover {
+            background: rgba(70, 70, 70, 0.9);
+        }
+        
+        #audio-controls {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .audio-button {
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 1px solid #666;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            #game-container {
+                max-width: 100%;
+                max-height: 100%;
+            }
+            
+            #dialogue-container {
+                padding: 15px;
+                min-height: 120px;
+            }
+            
+            #character-name {
+                font-size: 1.1em;
+            }
+            
+            #dialogue-text {
+                font-size: 1em;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #dialogue-container {
+                padding: 10px;
+                min-height: 100px;
+            }
+            
+            #character-name {
+                font-size: 1em;
+            }
+            
+            #dialogue-text {
+                font-size: 0.9em;
+            }
+            
+            .menu-button {
+                width: 160px;
+                padding: 10px 20px;
+            }
+        }
+        
+        #character-child {
+            height: 50% !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="background"></div>
+        
+        <div id="character-container">
+            <!-- 角色立绘将通过JavaScript动态添加 -->
+        </div>
+        
+        <div id="dialogue-container">
+            <div id="name-container">
+                <span id="character-name"></span>
+            </div>
+            <div id="dialogue-text"></div>
+            <div id="continue-indicator">▼</div>
+        </div>
+        
+        <div id="audio-controls">
+            <button id="music-toggle" class="audio-button">音乐:开</button>
+            <button id="sound-toggle" class="audio-button">音效:开</button>
+        </div>
+        
+        <button id="menu-button">菜单</button>
+        
+        <div id="menu-overlay">
+            <button id="continue-button" class="menu-button">继续游戏</button>
+            <button id="save-button" class="menu-button">保存进度</button>
+            <button id="load-button" class="menu-button">读取进度</button>
+            <button id="settings-button" class="menu-button">游戏设置</button>
+            <button id="about-button" class="menu-button">关于游戏</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏数据 - 剧情脚本
+        const gameScript = [
+            {
+                background: "magic_academy",
+                characters: [{id: "apprentice", position: "center"}],
+                name: "",
+                text: "在魔法学院的一角，精灵学徒艾莉娅正在为她的学业发愁。她是个学艺不精的魔法学徒，总是无法完美掌握复杂的法术。"
+            },
+            {
+                background: "magic_academy",
+                characters: [{id: "apprentice", position: "center"}],
+                name: "艾莉娅",
+                text: "唉...传送魔法又失败了。最近学院发生了传送魔法事故，已经有好几个学生在使用传送魔法时失踪了..."
+            },
+            {
+                background: "library",
+                characters: [{id: "apprentice", position: "right"}],
+                name: "",
+                text: "在图书馆的角落里，艾莉娅发现了一个蜷缩在书架间的小女孩。"
+            },
+            {
+                background: "library",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "left"}],
+                name: "艾莉娅",
+                text: "咦？这里怎么会有个小孩子？你从哪里来的？"
+            },
+            {
+                background: "library",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "left"}],
+                name: "",
+                text: "小女孩只是睁着大眼睛看着她，没有回答。艾莉娅意识到这个孩子还不会说话。"
+            },
+            {
+                background: "dormitory",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "left"}],
+                name: "艾莉娅",
+                text: "好吧，既然找不到你的家人，你就暂时跟着我吧。我会教你一些生活常识和简单的魔法。"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "left"}],
+                name: "",
+                text: "艾莉娅带着小女孩一起研究传送魔法。她发现每当小女孩在身边时，魔法实验就会产生奇怪的法术波动。"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}],
+                name: "艾莉娅",
+                text: "这种波动...难道传送魔法事故与这个孩子有关？如果我把她交出去，她会不会有危险？我的人生会不会就此毁掉？"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}],
+                name: "",
+                text: "经过一番挣扎，艾莉娅决定将小女孩藏在自己的实验室里，继续秘密研究。"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "strong_man", position: "left"}],
+                name: "",
+                text: "某天，一个肌肉发达的男学生闯进了实验室。"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "strong_man", position: "left"}],
+                name: "筋肉男",
+                text: "你们这些精灵研究传送魔法毫无意义！传送魔法根本没有失效，会中途失踪只是危言耸听！"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "strong_man", position: "left"}],
+                name: "艾莉娅",
+                text: "等等！不要！"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "center"}],
+                name: "",
+                text: "筋肉男不顾艾莉娅的劝阻，自顾自地使用了传送魔法，瞬间消失在实验室中。"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "center"}],
+                name: "艾莉娅",
+                text: "不...他居然用自己做实验..."
+            },
+            {
+                background: "corridor",
+                characters: [{id: "apprentice", position: "center"}],
+                name: "",
+                text: "门外突然传来骚动声。艾莉娅跑出去，发现筋肉男身体的一部分出现在了对门的房间。"
+            },
+            {
+                background: "corridor",
+                characters: [{id: "apprentice", position: "right"}, {id: "senior", position: "left"}],
+                name: "",
+                text: "学生们陷入恐慌，艾莉娅的师姐——一位强大的魔法师，暴力镇压了骚动，将所有人定在原地。"
+            },
+            {
+                background: "corridor",
+                characters: [{id: "apprentice", position: "right"}, {id: "senior", position: "left"}],
+                name: "师姐",
+                text: "所有人不许动！我要一个个排查可疑人物！"
+            },
+            {
+                background: "corridor",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "center"}],
+                name: "",
+                text: "艾莉娅看到小女孩灵活地穿梭在人群中，没有被定身法术影响，分外显眼。"
+            },
+            {
+                background: "corridor",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "center"}],
+                name: "",
+                text: "师姐注意到了小女孩，但因为艾莉娅的关系放过了她。小女孩像雏鸟归巢一样扑进艾莉娅怀里。"
+            },
+            {
+                background: "corridor",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "center"}],
+                name: "艾莉娅",
+                text: "（心碎）这个孩子...和筋肉男的死有关系吗？我该不该告诉大家真相？"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "left"}],
+                name: "",
+                text: "艾莉娅抱着小女孩回到实验室，两人都在哭泣。"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "left"}, {id: "headmaster", position: "center"}],
+                name: "",
+                text: "校长——艾莉娅的师尊赶到现场，发现艾莉娅抱着小女孩在实验室门口哭泣。"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "left"}, {id: "headmaster", position: "center"}],
+                name: "校长",
+                text: "艾莉娅，发生了什么？"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "left"}, {id: "headmaster", position: "center"}],
+                name: "",
+                text: "艾莉娅哭得说不出话，校长沉默地拍着她的背帮她顺气。小女孩也学着校长的样子，轻轻拍着艾莉娅的背。"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "center"}],
+                name: "艾莉娅",
+                text: "（下定决心）我要自己研究这个孩子，保护她，找出真相！"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "senior", position: "left"}],
+                name: "",
+                text: "在艾莉娅夜以继日的研究中，师姐也从筋肉男事件的数据中取得了重大研究成果。"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "senior", position: "left"}],
+                name: "",
+                text: "师姐发现了小女孩与传送魔法事故的关联，但她没有戳穿艾莉娅。"
+            },
+            {
+                background: "laboratory",
+                characters: [{id: "apprentice", position: "right"}, {id: "senior", position: "left"}, {id: "headmaster", position: "center"}],
+                name: "",
+                text: "在艾莉娅还在犹豫时，师姐和校长已经联手解决了问题。"
+            },
+            {
+                background: "magic_academy",
+                characters: [{id: "apprentice", position: "right"}, {id: "child", position: "left"}],
+                name: "",
+                text: "传送魔法的事故终于得到了解决，而艾莉娅与神秘小女孩的故事，才刚刚开始..."
+            }
+        ];
+
+        // 角色资源
+        const characterResources = {
+            "apprentice": {
+                name: "艾莉娅",
+                image: "./images/apprentice.png"
+            },
+            "child": {
+                name: "小女孩",
+                image: "./images/child.png"
+            },
+            "strong_man": {
+                name: "筋肉男",
+                image: "./images/strong_man.png"
+            },
+            "senior": {
+                name: "师姐",
+                image: "./images/senior.png"
+            },
+            "headmaster": {
+                name: "校长",
+                image: "./images/headmaster.png",
+                determined: "./images/headmaster_determined.png"
+            }
+        };
+
+        // 背景资源
+        const backgroundResources = {
+            "magic_academy": "./images/magic_academy.png",
+            "library": "./images/library.png",
+            "dormitory": "./images/dormitory.png",
+            "laboratory": "./images/laboratory.png",
+            "corridor": "./images/corridor.png"
+        };
+
+        // 游戏状态
+        let currentSceneIndex = 0;
+        let textDisplayIndex = 0;
+        let isTextAnimating = false;
+        let textAnimationInterval;
+        let musicEnabled = true;
+        let soundEnabled = true;
+
+        // DOM元素
+        const gameContainer = document.getElementById('game-container');
+        const backgroundElement = document.getElementById('background');
+        const characterContainer = document.getElementById('character-container');
+        const characterNameElement = document.getElementById('character-name');
+        const dialogueTextElement = document.getElementById('dialogue-text');
+        const continueIndicator = document.getElementById('continue-indicator');
+        const menuButton = document.getElementById('menu-button');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const musicToggle = document.getElementById('music-toggle');
+        const soundToggle = document.getElementById('sound-toggle');
+        const continueButton = document.getElementById('continue-button');
+        const saveButton = document.getElementById('save-button');
+        const loadButton = document.getElementById('load-button');
+        const settingsButton = document.getElementById('settings-button');
+        const aboutButton = document.getElementById('about-button');
+
+        // 初始化游戏
+        function initGame() {
+            displayScene(currentSceneIndex);
+            
+            // 添加事件监听
+            gameContainer.addEventListener('click', handleClick);
+            menuButton.addEventListener('click', toggleMenu);
+            continueButton.addEventListener('click', toggleMenu);
+            saveButton.addEventListener('click', saveGame);
+            loadButton.addEventListener('click', loadGame);
+            settingsButton.addEventListener('click', showSettings);
+            aboutButton.addEventListener('click', showAbout);
+            musicToggle.addEventListener('click', toggleMusic);
+            soundToggle.addEventListener('click', toggleSound);
+            
+            // 添加键盘事件监听
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        // 处理点击事件
+        function handleClick() {
+            if (isTextAnimating) {
+                // 如果文本正在动画，立即完成
+                completeTextAnimation();
+            } else {
+                // 否则继续到下一场景或下一段文本
+                nextScene();
+            }
+        }
+
+        // 处理键盘事件
+        function handleKeyPress(event) {
+            if (event.code === 'Space' || event.code === 'Enter') {
+                handleClick();
+            } else if (event.code === 'Escape') {
+                toggleMenu();
+            }
+        }
+
+        // 显示场景
+        function displayScene(sceneIndex) {
+            const scene = gameScript[sceneIndex];
+            
+            // 更新背景
+            backgroundElement.style.backgroundImage = `url(${backgroundResources[scene.background]})`;
+            
+            // 更新角色
+            updateCharacters(scene.characters);
+            
+            // 更新对话
+            characterNameElement.textContent = scene.name;
+            animateText(scene.text);
+        }
+
+        // 更新角色显示
+        function updateCharacters(characters) {
+            // 清除所有现有角色
+            characterContainer.innerHTML = '';
+            
+            // 添加新角色
+            characters.forEach(char => {
+                const characterElement = document.createElement('img');
+                characterElement.id = `character-${char.id}`;
+                characterElement.className = 'character active';
+                
+                // ★★★ 修改这里：支持不同立绘 ★★★
+                if (char.expression && characterResources[char.id][char.expression]) {
+                    // 如果有指定表情并且存在对应图片，就用表情图片
+                    characterElement.src = characterResources[char.id][char.expression];
+                } else {
+                    // 否则用默认图片
+                    characterElement.src = characterResources[char.id].image;
+                }
+                
+                // 设置位置
+                if (char.position === 'left') {
+                    characterElement.style.left = '10%';
+                } else if (char.position === 'right') {
+                    characterElement.style.left = '60%';
+                } else {
+                    characterElement.style.left = '35%';
+                }
+                
+                characterContainer.appendChild(characterElement);
+            });
+        }
+
+        // 文本动画
+        function animateText(text) {
+            isTextAnimating = true;
+            textDisplayIndex = 0;
+            dialogueTextElement.textContent = '';
+            continueIndicator.style.display = 'none';
+            
+            clearInterval(textAnimationInterval);
+            textAnimationInterval = setInterval(() => {
+                if (textDisplayIndex < text.length) {
+                    dialogueTextElement.textContent += text[textDisplayIndex];
+                    textDisplayIndex++;
+                } else {
+                    clearInterval(textAnimationInterval);
+                    isTextAnimating = false;
+                    continueIndicator.style.display = 'block';
+                }
+            }, 30);
+        }
+
+        // 完成文本动画
+        function completeTextAnimation() {
+            clearInterval(textAnimationInterval);
+            const scene = gameScript[currentSceneIndex];
+            dialogueTextElement.textContent = scene.text;
+            isTextAnimating = false;
+            continueIndicator.style.display = 'block';
+        }
+
+        // 下一场景
+        function nextScene() {
+            if (currentSceneIndex < gameScript.length - 1) {
+                currentSceneIndex++;
+                displayScene(currentSceneIndex);
+            } else {
+                // 游戏结束，重新开始
+                currentSceneIndex = 0;
+                displayScene(currentSceneIndex);
+            }
+        }
+
+        // 切换菜单
+        function toggleMenu() {
+            if (menuOverlay.style.display === 'flex') {
+                menuOverlay.style.display = 'none';
+            } else {
+                menuOverlay.style.display = 'flex';
+            }
+        }
+
+        // 保存游戏
+        function saveGame() {
+            const saveData = {
+                sceneIndex: currentSceneIndex,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('magicApprenticeSave', JSON.stringify(saveData));
+            alert('游戏进度已保存！');
+            toggleMenu();
+        }
+
+        // 加载游戏
+        function loadGame() {
+            const saveData = localStorage.getItem('magicApprenticeSave');
+            if (saveData) {
+                const data = JSON.parse(saveData);
+                currentSceneIndex = data.sceneIndex;
+                displayScene(currentSceneIndex);
+                alert('游戏进度已加载！');
+            } else {
+                alert('没有找到保存的游戏进度！');
+            }
+            toggleMenu();
+        }
+
+        // 显示设置
+        function showSettings() {
+            alert("游戏设置\n\n文本速度: 中等\n自动播放: 关闭\n跳过已读: 开启");
+        }
+
+        // 显示关于
+        function showAbout() {
+            alert("关于游戏\n\n魔法学徒与神秘孩童\n\n一个关于责任、勇气与成长的视觉小说游戏\n\n改编自用户提供的剧情");
+        }
+
+        // 切换音乐
+        function toggleMusic() {
+            musicEnabled = !musicEnabled;
+            musicToggle.textContent = `音乐:${musicEnabled ? '开' : '关'}`;
+        }
+
+        // 切换音效
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            soundToggle.textContent = `音效:${soundEnabled ? '开' : '关'}`;
+        }
+
+        // 启动游戏
+        window.onload = initGame;
+    </script>
+</body>
+</html>
