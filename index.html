@@ -21,6 +21,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            
         }
         
         #game-container {
@@ -225,6 +226,12 @@
     </style>
 </head>
 <body>
+    <audio id="bgm" loop preload="auto">
+        <source src="./audio/832440__madgravitystudio__son-of-psycho.wav" type="audio/wav">
+    </audio>
+    <audio id="click-sound" preload="auto">
+        <source src="./audio/click.mp3" type="audio/mpeg">
+    </audio>
     <div id="game-container">
         <div id="background"></div>
         
@@ -477,6 +484,9 @@
         let musicEnabled = true;
         let soundEnabled = true;
 
+        const bgm = document.getElementById('bgm');
+        const clickSound = document.getElementById('click-sound');
+        
         // DOM元素
         const gameContainer = document.getElementById('game-container');
         const backgroundElement = document.getElementById('background');
@@ -508,30 +518,33 @@
             aboutButton.addEventListener('click', showAbout);
             musicToggle.addEventListener('click', toggleMusic);
             soundToggle.addEventListener('click', toggleSound);
-            
-            // 添加键盘事件监听
-            document.addEventListener('keydown', handleKeyPress);
-        }
+          // 添加键盘事件监听
+          document.addEventListener('keydown', handleKeyPress);
+    }
 
-        // 处理点击事件
-        function handleClick() {
-            if (isTextAnimating) {
-                // 如果文本正在动画，立即完成
-                completeTextAnimation();
-            } else {
-                // 否则继续到下一场景或下一段文本
-                nextScene();
-            }
+    // 处理点击事件
+    function handleClick() {
+        // 播放点击音效
+        if (soundEnabled && clickSound) {
+            clickSound.currentTime = 0;
+            clickSound.play().catch(e => console.log('音效播放失败'));
         }
+        
+        if (isTextAnimating) {
+            completeTextAnimation();
+        } else {
+            nextScene();
+        }
+    }
 
-        // 处理键盘事件
-        function handleKeyPress(event) {
-            if (event.code === 'Space' || event.code === 'Enter') {
-                handleClick();
-            } else if (event.code === 'Escape') {
-                toggleMenu();
-            }
+    // 处理键盘事件
+    function handleKeyPress(event) {
+        if (event.code === 'Space' || event.code === 'Enter') {
+            handleClick();
+        } else if (event.code === 'Escape') {
+            toggleMenu();
         }
+    }
 
         // 显示场景
         function displayScene(sceneIndex) {
@@ -670,6 +683,14 @@
         function toggleMusic() {
             musicEnabled = !musicEnabled;
             musicToggle.textContent = `音乐:${musicEnabled ? '开' : '关'}`;
+            if (musicEnabled) {
+        // 尝试播放背景音乐
+        bgm.play().catch(e => {
+            console.log('自动播放被阻止，需要用户交互后点击播放');
+        });
+    } else {
+        bgm.pause();
+    }
         }
 
         // 切换音效
